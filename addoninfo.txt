@@ -1,0 +1,15 @@
+"AddonInfo"
+{
+	addonSteamAppID     550      	
+	addontitle 		"Loot Drops" 	
+	addonversion 		0.01 			
+	addonauthor 		"Pyri" 		
+	addonauthorSteamID 	"" 
+
+	addonContent_Campaign 	0 
+	addonContent_Scripts 	1 
+
+
+	addonDescription "The Infected have been bogarting all the supplies!"
+
+} 
