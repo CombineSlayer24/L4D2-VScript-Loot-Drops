@@ -100,25 +100,25 @@ if ( !IsSoundPrecached( RemoveSound ) )
 // ===========================================
 function LootThink()
 {
-    if ( lootThinkEnt.ValidateScriptScope() )
-    {
-        local scope = lootThinkEnt.GetScriptScope();
+	if ( lootThinkEnt.ValidateScriptScope() )
+	{
+		local scope = lootThinkEnt.GetScriptScope();
 
-        // annoying shit
-        scope.DroppedItems <- DroppedItems;
-        scope.LootHintItemsDeletion <- LootHintItemsDeletion;
-        scope.WasTextFirstRan <- WasTextFirstRan;
-        scope.hintStartTime <- hintStartTime;
-        scope.hasShownSecondHint <- hasShownSecondHint;
-        scope.DisplayInstructorHint <- DisplayInstructorHint;
-        scope.DisableLight <- DisableLight;
-        scope.DisableGlow <- DisableGlow;
-        scope.SpawnParticleEffect <- SpawnParticleEffect;
-        scope.ITEM_REMOVE_TIMER <- ITEM_REMOVE_TIMER;
-        scope.FLASH_THRESHOLD <- FLASH_THRESHOLD;
-        scope.THINK_INTERVAL <- THINK_INTERVAL;
+		// annoying shit
+		scope.DroppedItems <- DroppedItems;
+		scope.LootHintItemsDeletion <- LootHintItemsDeletion;
+		scope.WasTextFirstRan <- WasTextFirstRan;
+		scope.hintStartTime <- hintStartTime;
+		scope.hasShownSecondHint <- hasShownSecondHint;
+		scope.DisplayInstructorHint <- DisplayInstructorHint;
+		scope.DisableLight <- DisableLight;
+		scope.DisableGlow <- DisableGlow;
+		scope.SpawnParticleEffect <- SpawnParticleEffect;
+		scope.ITEM_REMOVE_TIMER <- ITEM_REMOVE_TIMER;
+		scope.FLASH_THRESHOLD <- FLASH_THRESHOLD;
+		scope.THINK_INTERVAL <- THINK_INTERVAL;
 
-        scope["Think"] <- function()
+		scope["Think"] <- function()
 		{
 			local currentTime = Time();
 
@@ -205,13 +205,13 @@ function LootThink()
 					{
 						NetProps.SetPropInt( item, "m_Glow.m_bFlashing", 1 );
 						NetProps.SetPropInt( item, "m_Glow.m_glowColorOverride", 255 | ( 0 << 8 ) | ( 0 << 16 ) );
-                    }
-                }
-            }
-            return THINK_INTERVAL;
-        }
-        AddThinkToEnt( lootThinkEnt, "Think" );
-    }
+					}
+				}
+			}
+			return THINK_INTERVAL;
+		}
+		AddThinkToEnt( lootThinkEnt, "Think" );
+	}
 }
 
 // ===========================================
