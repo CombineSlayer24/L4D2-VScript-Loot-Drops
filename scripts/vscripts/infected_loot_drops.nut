@@ -6,6 +6,7 @@ Msg( "-----------------------------------\n" );
 // ===========================================
 const FLASH_THRESHOLD = 10.0;
 const ITEM_REMOVE_TIMER	= 25.0;
+const THINK_INTERVAL = 0.1;
 // ===========================================
 // 				LOCAL VARIABLES
 // ===========================================
@@ -16,6 +17,7 @@ local lastHintTime 		= 0;
 local WasTextFirstRan 	= false;
 local hintStartTime 	= -1;
 local hasShownSecondHint = false;
+local lootThinkEnt = SpawnEntityFromTable("info_target", { targetname = "lootThinkEnt" });
 
 local AmmoConfig = {
 	/*
@@ -98,95 +100,118 @@ if ( !IsSoundPrecached( RemoveSound ) )
 // ===========================================
 function LootThink()
 {
-	local currentTime = Time();
+    if ( lootThinkEnt.ValidateScriptScope() )
+    {
+        local scope = lootThinkEnt.GetScriptScope();
 
-	// for our second hint when an infected is killed.
-	if ( WasTextFirstRan && !hasShownSecondHint && hintStartTime != -1 )
-	{
-		if ( currentTime - hintStartTime >= 6.0 )
+        // annoying shit
+        scope.DroppedItems <- DroppedItems;
+        scope.LootHintItemsDeletion <- LootHintItemsDeletion;
+        scope.WasTextFirstRan <- WasTextFirstRan;
+        scope.hintStartTime <- hintStartTime;
+        scope.hasShownSecondHint <- hasShownSecondHint;
+        scope.DisplayInstructorHint <- DisplayInstructorHint;
+        scope.DisableLight <- DisableLight;
+        scope.DisableGlow <- DisableGlow;
+        scope.SpawnParticleEffect <- SpawnParticleEffect;
+        scope.ITEM_REMOVE_TIMER <- ITEM_REMOVE_TIMER;
+        scope.FLASH_THRESHOLD <- FLASH_THRESHOLD;
+        scope.THINK_INTERVAL <- THINK_INTERVAL;
+
+        scope["Think"] <- function()
 		{
-			DisplayInstructorHint( LootHintItemsDeletion );
-			hasShownSecondHint = true;
-		}
-	}
+			local currentTime = Time();
 
-	foreach ( itemIndex, itemData in DroppedItems )
-	{
-		local item = EntIndexToHScript( itemIndex );
-
-		if ( !item || !item.IsValid() || currentTime - itemData.spawnTime > ITEM_REMOVE_TIMER )
-		{
-			if ( item && item.IsValid() && item.GetOwnerEntity() == null )
+			// for our second hint when an infected is killed.
+			if ( WasTextFirstRan && !hasShownSecondHint && hintStartTime != -1 )
 			{
-				local itemOrigin = item.GetOrigin();
-
-				DisableLight( itemData );
-				item.Kill();
-				EmitAmbientSoundOn( RemoveSound, 0.8, 85, RandomInt( 94, 106 ), item );
-
-				// Spawn and trigger particle effect at item’s location
-				local particle = SpawnParticleEffect( "st_elmos_fire_cp0", itemOrigin );
-				if ( particle && particle.IsValid() )
+				if ( currentTime - hintStartTime >= 6.0 )
 				{
-					DoEntFire( "!self", "Start", "", 0, null, particle );
-					DoEntFire( "!self", "Kill", "", 0.65, null, particle );
+					DisplayInstructorHint( LootHintItemsDeletion );
+					hasShownSecondHint = true;
 				}
 			}
 
-			delete DroppedItems[ itemIndex ];
-		}
-		else if ( item.GetOwnerEntity() != null )
-		{
-			// Item picked up: disable glow and light
-			DisableGlow( item );
-			DisableLight( itemData );
-			DroppedItems[ itemIndex ].glowing = false;
-			delete DroppedItems[ itemIndex ];
-		}
-		else
-		{
-			// Update light and particle position without rotation
-			if ("lightEnt" in itemData)
+			foreach ( itemIndex, itemData in DroppedItems )
 			{
-				local itemPos = item.GetCenter(); // Offset above item's base
-				if (itemData.lightEnt.light && itemData.lightEnt.light.IsValid())
+				local item = EntIndexToHScript( itemIndex );
+
+				if ( !item || !item.IsValid() || currentTime - itemData.spawnTime > ITEM_REMOVE_TIMER )
 				{
-					itemData.lightEnt.light.SetOrigin(itemPos);
-				}
-				if (itemData.lightEnt.particle && itemData.lightEnt.particle.IsValid())
-				{
-					itemData.lightEnt.particle.SetOrigin(itemPos);
-					local flashState = (currentTime % 0.6 < 0.3);
-					if (flashState)
+					if ( item && item.IsValid() && item.GetOwnerEntity() == null )
 					{
-						DoEntFire("!self", "Start", "", 0, null, itemData.lightEnt.particle);
+						local itemOrigin = item.GetOrigin();
+
+						DisableLight( itemData );
+						item.Kill();
+						EmitAmbientSoundOn( RemoveSound, 0.8, 85, RandomInt( 94, 106 ), item );
+
+						// Spawn and trigger particle effect at item’s location
+						local particle = SpawnParticleEffect( "st_elmos_fire_cp0", itemOrigin );
+						if ( particle && particle.IsValid() )
+						{
+							DoEntFire( "!self", "Start", "", 0, null, particle );
+							DoEntFire( "!self", "Kill", "", 0.65, null, particle );
+						}
+					}
+					delete DroppedItems[ itemIndex ];
+				}
+				else if ( item.GetOwnerEntity() != null )
+				{
+					// Item picked up: disable glow and light
+					DisableGlow( item );
+					DisableLight( itemData );
+					DroppedItems[ itemIndex ].glowing = false;
+					delete DroppedItems[ itemIndex ];
+				}
+				else
+				{
+					// Update light and particle position without rotation
+					if ( "lightEnt" in itemData )
+					{
+						local itemPos = item.GetCenter();
+						if ( itemData.lightEnt.light && itemData.lightEnt.light.IsValid() )
+						{
+							itemData.lightEnt.light.SetOrigin( itemPos );
+						}
+						if ( itemData.lightEnt.particle && itemData.lightEnt.particle.IsValid() )
+						{
+							itemData.lightEnt.particle.SetOrigin( itemPos );
+							local flashState = ( currentTime % 1.6 < 0.3 );
+							if ( flashState )
+							{
+								DoEntFire( "!self", "Start", "", 0, null, itemData.lightEnt.particle );
+							}
+							else
+							{
+								DoEntFire( "!self", "Stop", "", 0, null, itemData.lightEnt.particle );
+							}
+						}
+					}
+
+					// Glow flashing logic
+					local timeRemaining = ITEM_REMOVE_TIMER - ( currentTime - itemData.spawnTime );
+					if ( timeRemaining > FLASH_THRESHOLD )
+					{
+						NetProps.SetPropInt( item, "m_Glow.m_bFlashing", 0 );
+						NetProps.SetPropInt( item, "m_Glow.m_glowColorOverride", 50 | ( 200 << 8 ) | ( 50 << 16 ) );
+					}
+					else if ( timeRemaining > 5 )
+					{
+						//NetProps.SetPropInt( item, "m_Glow.m_bFlashing", 1 );
+						NetProps.SetPropInt( item, "m_Glow.m_glowColorOverride", 240 | ( 240 << 8 ) | ( 50 << 16 ) );
 					}
 					else
 					{
-						DoEntFire("!self", "Stop", "", 0, null, itemData.lightEnt.particle);
-					}
-				}
-			}
-
-			// Glow flashing logic
-			local timeRemaining = ITEM_REMOVE_TIMER - (currentTime - itemData.spawnTime);
-			if (timeRemaining > FLASH_THRESHOLD)
-			{
-				NetProps.SetPropInt(item, "m_Glow.m_bFlashing", 0);
-				NetProps.SetPropInt(item, "m_Glow.m_glowColorOverride", 50 | (200 << 8) | (50 << 16));
-			}
-			else if (timeRemaining > 5)
-			{
-				NetProps.SetPropInt(item, "m_Glow.m_bFlashing", 1);
-				NetProps.SetPropInt(item, "m_Glow.m_glowColorOverride", 240 | (240 << 8) | (50 << 16));
-			}
-			else
-			{
-				NetProps.SetPropInt(item, "m_Glow.m_bFlashing", 1);
-				NetProps.SetPropInt(item, "m_Glow.m_glowColorOverride", 255 | (0 << 8) | (0 << 16));
-			}
-		}
-	}
+						NetProps.SetPropInt( item, "m_Glow.m_bFlashing", 1 );
+						NetProps.SetPropInt( item, "m_Glow.m_glowColorOverride", 255 | ( 0 << 8 ) | ( 0 << 16 ) );
+                    }
+                }
+            }
+            return THINK_INTERVAL;
+        }
+        AddThinkToEnt( lootThinkEnt, "Think" );
+    }
 }
 
 // ===========================================
@@ -194,7 +219,7 @@ function LootThink()
 // ===========================================
 function OnGameEvent_round_start( params )
 {
-	g_MapScript.ScriptedMode_AddUpdate( LootThink )
+	LootThink();
 	WasTextFirstRan = false;
 	hintStartTime = -1; // Reset on round start
 	hasShownSecondHint = false;
@@ -477,11 +502,11 @@ function CreateLightGlow( item, origin, lightColor = "220 75 50" )
 	{
 		targetname = "loot_light_" + UniqueString(),
 		origin = origin,
-		brightness = 2.5,	// 2.5
+		brightness = 2.65,	// 2.5
 		_inner_cone = 0,
 		_cone = 0,
 		spotlight_radius = 24,	// 32
-		distance = 32,
+		distance = 38,
 		//style = 2,
 		_light = lightColor
 	} );
