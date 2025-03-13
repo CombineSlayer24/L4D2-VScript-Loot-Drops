@@ -4,20 +4,20 @@ Msg( "-----------------------------------\n" );
 // ===========================================
 //				CONSTANTS
 // ===========================================
-const FLASH_THRESHOLD = 10.0;
-const ITEM_REMOVE_TIMER	= 25.0;
-const THINK_INTERVAL = 0.05;
+const LD_FLASH_THRESHOLD 	= 10.0;
+const LD_ITEM_REMOVE_TIMER	= 25.0;
+const LD_THINK_INTERVAL 	= 0.05;
 // ===========================================
 // 				LOCAL VARIABLES
 // ===========================================
-local DropSound 		= "ui/gift_drop.wav"
-local RemoveSound 		= "ui/beep_error01.wav"
-local SoundDelay 		= 0;
-local lastHintTime 		= 0;
-local WasTextFirstRan 	= false;
-local hintStartTime 	= -1;
-local hasShownSecondHint = false;
-local lootThinkEnt = SpawnEntityFromTable("info_target", { targetname = "lootThinkEnt" });
+local DropSound 			= "ui/gift_drop.wav"
+local RemoveSound 			= "ui/beep_error01.wav"
+local SoundDelay 			= 0;
+local lastHintTime 			= 0;
+local WasTextFirstRan 		= false;
+local hintStartTime 		= -1;
+local hasShownSecondHint 	= false;
+local lootThinkEnt 			= SpawnEntityFromTable("info_target", { targetname = "lootThinkEnt" });
 
 local AmmoConfig = {
 	/*
@@ -114,9 +114,9 @@ function LootThink()
 		scope.DisableLight <- DisableLight;
 		scope.DisableGlow <- DisableGlow;
 		scope.SpawnParticleEffect <- SpawnParticleEffect;
-		scope.ITEM_REMOVE_TIMER <- ITEM_REMOVE_TIMER;
-		scope.FLASH_THRESHOLD <- FLASH_THRESHOLD;
-		scope.THINK_INTERVAL <- THINK_INTERVAL;
+		scope.LD_ITEM_REMOVE_TIMER <- LD_ITEM_REMOVE_TIMER;
+		scope.LD_FLASH_THRESHOLD <- LD_FLASH_THRESHOLD;
+		scope.LD_THINK_INTERVAL <- LD_THINK_INTERVAL;
 
 		scope["Think"] <- function()
 		{
@@ -136,7 +136,7 @@ function LootThink()
 			{
 				local item = EntIndexToHScript( itemIndex );
 
-				if ( !item || !item.IsValid() || currentTime - itemData.spawnTime > ITEM_REMOVE_TIMER )
+				if ( !item || !item.IsValid() || currentTime - itemData.spawnTime > LD_ITEM_REMOVE_TIMER )
 				{
 					if ( item && item.IsValid() && item.GetOwnerEntity() == null )
 					{
@@ -190,8 +190,8 @@ function LootThink()
 					}
 
 					// Glow flashing logic
-					local timeRemaining = ITEM_REMOVE_TIMER - ( currentTime - itemData.spawnTime );
-					if ( timeRemaining > FLASH_THRESHOLD )
+					local timeRemaining = LD_ITEM_REMOVE_TIMER - ( currentTime - itemData.spawnTime );
+					if ( timeRemaining > LD_FLASH_THRESHOLD )
 					{
 						NetProps.SetPropInt( item, "m_Glow.m_bFlashing", 0 );
 						NetProps.SetPropInt( item, "m_Glow.m_glowColorOverride", 50 | ( 200 << 8 ) | ( 50 << 16 ) );
@@ -208,7 +208,7 @@ function LootThink()
 					}
 				}
 			}
-			return THINK_INTERVAL;
+			return LD_THINK_INTERVAL;
 		}
 		AddThinkToEnt( lootThinkEnt, "Think" );
 	}
